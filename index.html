@@ -341,42 +341,53 @@
         let initialMouseY = 0;
 
         function startResize(event) {
-            event.preventDefault();
-            isResizing = true;
-            currentNote = event.target.closest(".note");
-            bringToFront(currentNote);
-            initialLeft = parseFloat(currentNote.style.left) || 0;
-            initialTop = parseFloat(currentNote.style.top) || 0;
-            initialWidth = parseFloat(currentNote.style.width) || currentNote.offsetWidth;
-            initialHeight = parseFloat(currentNote.style.height) || currentNote.offsetHeight;
-            initialMouseX = event.clientX;
-            initialMouseY = event.clientY;
-            document.addEventListener("mousemove", resizeNote);
-            document.addEventListener("mouseup", stopResize);
-        }
+    event.preventDefault();
+    isResizing = true;
+    currentNote = event.target.closest(".note");
+    bringToFront(currentNote);
 
-        function resizeNote(event) {
-            if (!isResizing || !currentNote) return;
+    // 퍼센트 단위로 초기 위치 저장
+    const containerWidth = window.innerWidth;
+    const containerHeight = window.innerHeight;
+    initialLeft = (parseFloat(currentNote.style.left) / 100) * containerWidth || 0;
+    initialTop = (parseFloat(currentNote.style.top) / 100) * containerHeight || 0;
+    initialWidth = parseFloat(currentNote.style.width) || currentNote.offsetWidth;
+    initialHeight = parseFloat(currentNote.style.height) || currentNote.offsetHeight;
+    initialMouseX = event.clientX;
+    initialMouseY = event.clientY;
 
-            const deltaX = event.clientX - initialMouseX;
-            const deltaY = event.clientY - initialMouseY;
+    document.addEventListener("mousemove", resizeNote);
+    document.addEventListener("mouseup", stopResize);
+}
 
-            const newWidth = Math.max(initialWidth + deltaX, 100);
-            const newHeight = Math.max(initialHeight + deltaY, 50);
+function resizeNote(event) {
+    if (!isResizing || !currentNote) return;
 
-            currentNote.style.width = `${newWidth}px`;
-            currentNote.style.height = `${newHeight}px`;
-            currentNote.style.left = `${initialLeft}px`;
-            currentNote.style.top = `${initialTop}px`;
-        }
+    const deltaX = event.clientX - initialMouseX;
+    const deltaY = event.clientY - initialMouseY;
 
-        function stopResize() {
-            isResizing = false;
-            currentNote = null;
-            document.removeEventListener("mousemove", resizeNote);
-            document.removeEventListener("mouseup", stopResize);
-            saveNotesToLocalStorage();
-        }
+    const newWidth = Math.max(initialWidth + deltaX, 100);
+    const newHeight = Math.max(initialHeight + deltaY, 50);
+
+    // 크기만 업데이트하고 위치는 변경하지 않음
+    currentNote.style.width = `${newWidth}px`;
+    currentNote.style.height = `${newHeight}px`;
+    // 위치는 퍼센트 단위로 유지되므로 여기서 수정하지 않음
+}
+
+function stopResize() {
+    isResizing = false;
+    if (currentNote) {
+        const containerWidth = window.innerWidth;
+        const containerHeight = window.innerHeight;
+        currentNote.dataset.leftPercent = (parseFloat(currentNote.style.left) / 100) * containerWidth || 0;
+        currentNote.dataset.topPercent = (parseFloat(currentNote.style.top) / 100) * containerHeight || 0;
+    }
+    currentNote = null;
+    document.removeEventListener("mousemove", resizeNote);
+    document.removeEventListener("mouseup", stopResize);
+    saveNotesToLocalStorage();
+}
 
         function startDrag(event) {
             const note = event.target.closest(".note");
