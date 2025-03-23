@@ -1,0 +1,785 @@
+<html>
+<head>
+    <link rel="icon" href="https://lh3.googleusercontent.com/pw/AJFCJaWk2ppiixRneO28N-j_c1aLow6p-VW9-4eUZAFWompL_NBkjhkkxCtSYytT-31D1t4E9907mMfCnmIuvLDtzvSp8NIhNI3Imse2ZjrkFNOkEx93QTatf1jujgjUSUqLA0v6RVMZUEX4LWS2UnrXI0CE=w32-h32-s-no?authuser=0" type="image/x-icon">
+    <title>Sticky Notes</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap">
+</head>
+<style>
+    body {
+        background-color: #ffffff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        width: 100vw;
+        position: relative;
+        overflow: hidden;
+        margin: 0;
+        transition: background-color 0.3s ease;
+    }
+
+    body.light-mode {
+        background-color: #ffffff;
+    }
+
+    body.dark-mode {
+        background-color: #1a1a1a;
+    }
+
+    .container {
+        position: absolute;
+        width: 100vw;
+        height: 100vh;
+        top: 0;
+        left: 0;
+        overflow: hidden;
+    }
+
+    button {
+        font-family: 'Roboto Mono', monospace;
+        font-size: 15px;
+        padding: 10px 15px;
+        background-color: #000000;
+        color: #ffffff;
+        border: 2px solid #ffffff;
+        cursor: pointer;
+        border-radius: 50px;
+    }
+
+    button:hover {
+        background-color: #ffffff;
+        color: #000000;
+    }
+
+    .note {
+        position: absolute;
+        background-color: #ffffcc;
+        width: 250px;
+        height: 300px;
+        min-width: 150px;
+        min-height: 80px;
+        max-width: 90vw;
+        max-height: 90vh;
+        font-size: 15px;
+        cursor: move;
+        font-family: "Roboto Mono", monospace;
+        border-radius: 2px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        display: flex;
+        flex-direction: column;
+        z-index: 1;
+    }
+
+    .note .header {
+        display: flex;
+        justify-content: space-between;
+        background-color: #ffeb3b;
+        margin: 0;
+        padding: 0 10px;
+        height: 28px;
+        cursor: move;
+        position: sticky;
+        top: 0;
+        z-index: 3;
+        align-items: center;
+    }
+
+    .note .header button {
+        font-size: 27px;
+        padding: 0;
+        background-color: transparent;
+        color: #1a1a1a;
+        border: none;
+        cursor: pointer;
+        transition: color 0.3s ease;
+        width: 30px;
+        text-align: center;
+    }
+
+    .note .header button:hover {
+        color: #ff0000;
+    }
+
+    .note .content {
+        flex: 1;
+        border: none;
+        background: transparent;
+        padding: 5px;
+        outline: none;
+        cursor: text;
+        white-space: pre-wrap;
+        overflow-y: auto;
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    .note .content::-webkit-scrollbar {
+        display: none;
+    }
+
+    .resize-handle {
+        position: absolute;
+        width: 15px;
+        height: 15px;
+        bottom: 0;
+        right: 0;
+        cursor: se-resize;
+        background-color: transparent;
+        z-index: 2;
+    }
+
+    .bottom-left-buttons {
+        position: fixed;
+        bottom: 10px;
+        left: 10px;
+        display: flex;
+        gap: 10px;
+        z-index: 100;
+    }
+
+    .bottom-right-buttons {
+        position: fixed;
+        bottom: 10px;
+        right: 10px;
+        display: flex;
+        gap: 10px;
+        z-index: 100;
+    }
+
+    .bottom-left-buttons button,
+    .bottom-right-buttons button {
+        font-family: 'Roboto Mono', monospace;
+        font-size: 15px;
+        padding: 10px 15px;
+        background-color: #000000;
+        color: #ffffff;
+        border: 2px solid #ffffff;
+        cursor: pointer;
+        border-radius: 50px;
+    }
+
+    .bottom-left-buttons button:hover,
+    .bottom-right-buttons button:hover {
+        background-color: #ffffff;
+        color: #000000;
+    }
+
+    body.light-mode .bottom-left-buttons button,
+    body.light-mode .bottom-right-buttons button {
+        background-color: #ffffff;
+        color: #000000;
+        border: 2px solid #000000;
+    }
+
+    body.light-mode .bottom-left-buttons button:hover,
+    body.light-mode .bottom-right-buttons button:hover {
+        background-color: #000000;
+        color: #ffffff;
+    }
+
+    #fullscreenBtn {
+    font-size: 27px; /* 기존 18px의 1.5배 */
+    padding: 10px 15px; /* 기존 padding-left/right 10px을 15px로 1.5배 조정 */
+}
+
+    .sun-icon, .moon-icon {
+        font-size: 18px;
+    }
+
+    @media (max-width: 768px) {
+        .note {
+            width: 200px;
+            height: 250px;
+            font-size: 14px;
+        }
+
+        button {
+            font-size: 12px;
+            padding: 8px 12px;
+        }
+
+        .bottom-left-buttons,
+        .bottom-right-buttons {
+            gap: 5px;
+        }
+    }
+</style>
+
+<body>
+    <div id="container"></div>
+
+    <div class="bottom-left-buttons">
+        <button id="saveBtn">Save</button>
+        <input type="file" id="loadFile" accept=".json" style="display: none;" onchange="loadNotesFromFile(event)">
+        <button id="loadBtn">Load</button>
+        <button onclick="openResetConfirmation()">Reset</button>
+    </div>
+
+    <div class="bottom-right-buttons">
+        <button id="fullscreenBtn">⛶</button>
+        <button id="addBtn">Add</button>
+        <button id="undoBtn">Undo</button>
+        <button id="darkModeToggle">
+            <span id="darkModeIcon" class="moon-icon">🌙</span>
+        </button>
+    </div>
+
+    <script>
+        let noteId = 0;
+        let deletedNotes = [];
+        let maxZIndex = 1;
+
+        function saveDarkModeState() {
+            const isDarkMode = document.body.classList.contains("dark-mode");
+            localStorage.setItem("darkMode", isDarkMode);
+        }
+
+        function loadDarkModeState() {
+            const savedDarkMode = localStorage.getItem("darkMode");
+            if (savedDarkMode === "true") {
+                document.body.classList.add("dark-mode");
+                document.body.classList.remove("light-mode");
+            } else {
+                document.body.classList.add("light-mode");
+                document.body.classList.remove("dark-mode");
+            }
+            updateDarkModeIcon();
+        }
+
+        function updateDarkModeIcon() {
+            const darkModeIcon = document.getElementById("darkModeIcon");
+            if (document.body.classList.contains("dark-mode")) {
+                darkModeIcon.textContent = "🌙";
+            } else {
+                darkModeIcon.textContent = "☀️";
+            }
+        }
+
+        function toggleDarkMode() {
+            document.body.classList.toggle("dark-mode");
+            document.body.classList.toggle("light-mode");
+            saveDarkModeState();
+            updateDarkModeIcon();
+        }
+
+        function bringToFront(note) {
+            maxZIndex++;
+            note.style.zIndex = maxZIndex;
+        }
+
+        function createStickyNote() {
+            const container = document.getElementById("container");
+            const note = document.createElement("div");
+            note.className = "note";
+            note.id = "note_" + noteId;
+
+            function positionNoteInCenter() {
+                const noteWidth = 250; // 노트의 기본 너비 (px)
+                const noteHeight = 300; // 노트의 기본 높이 (px)
+                const containerWidth = window.innerWidth;
+                const containerHeight = window.innerHeight;
+
+                // 노트의 중심이 화면 중앙에 오도록 계산
+                const leftPercent = ((containerWidth - noteWidth) / 2 / containerWidth) * 100;
+                const topPercent = ((containerHeight - noteHeight) / 2 / containerHeight) * 100;
+
+                note.style.left = `${leftPercent}%`;
+                note.style.top = `${topPercent}%`;
+                note.dataset.leftPercent = leftPercent;
+                note.dataset.topPercent = topPercent;
+            }
+
+            positionNoteInCenter();
+
+            note.innerHTML = `
+                <div class="header">
+                    <button class="add-note">+</button>
+                    <button class="delete" data-id="${noteId}">✖</button>
+                </div>
+                <div class="content" contenteditable="true"></div>
+            `;
+
+            noteId++;
+            note.style.zIndex = maxZIndex;
+            note.addEventListener("mousedown", startDrag);
+            note.addEventListener("touchstart", startDrag, { passive: false });
+            const content = note.querySelector(".content");
+            content.addEventListener("input", saveNotesToLocalStorage);
+            content.addEventListener("focus", () => bringToFront(note));
+            container.appendChild(note);
+
+            const resizeHandle = document.createElement("div");
+            resizeHandle.className = "resize-handle";
+            note.appendChild(resizeHandle);
+            resizeHandle.addEventListener("mousedown", startResize);
+
+            note.querySelector(".add-note").addEventListener("click", function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                content.blur();
+                createStickyNote();
+            });
+
+            note.querySelector(".delete").addEventListener("click", function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                content.blur();
+                deleteStickyNote(this.getAttribute("data-id"));
+            });
+
+            saveNotesToLocalStorage();
+        }
+
+        let isResizing = false;
+        let currentNote = null;
+        let initialLeft = 0;
+        let initialTop = 0;
+        let initialWidth = 0;
+        let initialHeight = 0;
+        let initialMouseX = 0;
+        let initialMouseY = 0;
+
+        function startResize(event) {
+            event.preventDefault();
+            isResizing = true;
+            currentNote = event.target.closest(".note");
+            bringToFront(currentNote);
+            initialLeft = parseFloat(currentNote.style.left) || 0;
+            initialTop = parseFloat(currentNote.style.top) || 0;
+            initialWidth = parseFloat(currentNote.style.width) || currentNote.offsetWidth;
+            initialHeight = parseFloat(currentNote.style.height) || currentNote.offsetHeight;
+            initialMouseX = event.clientX;
+            initialMouseY = event.clientY;
+            document.addEventListener("mousemove", resizeNote);
+            document.addEventListener("mouseup", stopResize);
+        }
+
+        function resizeNote(event) {
+            if (!isResizing || !currentNote) return;
+
+            const deltaX = event.clientX - initialMouseX;
+            const deltaY = event.clientY - initialMouseY;
+
+            const newWidth = Math.max(initialWidth + deltaX, 100);
+            const newHeight = Math.max(initialHeight + deltaY, 50);
+
+            currentNote.style.width = `${newWidth}px`;
+            currentNote.style.height = `${newHeight}px`;
+            currentNote.style.left = `${initialLeft}px`;
+            currentNote.style.top = `${initialTop}px`;
+        }
+
+        function stopResize() {
+            isResizing = false;
+            currentNote = null;
+            document.removeEventListener("mousemove", resizeNote);
+            document.removeEventListener("mouseup", stopResize);
+            saveNotesToLocalStorage();
+        }
+
+        function startDrag(event) {
+            const note = event.target.closest(".note");
+            if (!note || event.target.tagName === "BUTTON" || event.target.classList.contains("content") || event.target.classList.contains("resize-handle")) return;
+
+            bringToFront(note);
+
+            const header = note.querySelector(".header");
+            const rect = header.getBoundingClientRect();
+            let offsetX, offsetY;
+
+            if (event.type === "touchstart") {
+                const touch = event.touches[0];
+                offsetX = touch.clientX - rect.left;
+                offsetY = touch.clientY - rect.top;
+            } else {
+                offsetX = event.clientX - rect.left;
+                offsetY = event.clientY - rect.top;
+            }
+
+            function dragNote(event) {
+                event.preventDefault();
+                const containerWidth = window.innerWidth;
+                const containerHeight = window.innerHeight;
+                let newNoteX, newNoteY;
+
+                if (event.type === "touchmove") {
+                    const touch = event.touches[0];
+                    newNoteX = touch.clientX - offsetX;
+                    newNoteY = touch.clientY - offsetY;
+                } else {
+                    newNoteX = event.clientX - offsetX;
+                    newNoteY = event.clientY - offsetY;
+                }
+
+                let leftPercent = (newNoteX / containerWidth) * 100;
+                let topPercent = (newNoteY / containerHeight) * 100;
+                leftPercent = Math.max(0, Math.min(leftPercent, 100 - (note.offsetWidth / containerWidth) * 100));
+                topPercent = Math.max(0, Math.min(topPercent, 100 - (note.offsetHeight / containerHeight) * 100));
+
+                note.style.left = `${leftPercent}%`;
+                note.style.top = `${topPercent}%`;
+                note.dataset.leftPercent = leftPercent;
+                note.dataset.topPercent = topPercent;
+            }
+
+            function stopDrag() {
+                document.removeEventListener("mousemove", dragNote);
+                document.removeEventListener("mouseup", stopDrag);
+                document.removeEventListener("touchmove", dragNote);
+                document.removeEventListener("touchend", stopDrag);
+                saveNotesToLocalStorage();
+            }
+
+            document.addEventListener("mousemove", dragNote);
+            document.addEventListener("mouseup", stopDrag);
+            document.addEventListener("touchmove", dragNote, { passive: false });
+            document.addEventListener("touchend", stopDrag);
+        }
+
+        function deleteStickyNote(noteId) {
+            const note = document.getElementById("note_" + noteId);
+            const container = document.getElementById("container");
+            const notes = container.getElementsByClassName("note");
+
+            if (notes.length === 1) {
+                openResetConfirmation();
+            } else {
+                if (note) {
+                    deletedNotes.push({
+                        id: note.id,
+                        content: note.querySelector(".content").innerHTML,
+                        top: note.style.top,
+                        left: note.style.left,
+                        height: note.style.height,
+                        width: note.style.width,
+                        zIndex: note.style厨
+                    });
+                    note.remove();
+                    saveNotesToLocalStorage();
+                }
+            }
+        }
+
+        function undoDelete() {
+            if (deletedNotes.length === 0) return;
+
+            const deletedNote = deletedNotes.pop();
+            const container = document.getElementById("container");
+            const note = document.createElement("div");
+            note.className = "note";
+            note.id = deletedNote.id;
+            note.style.left = deletedNote.left;
+            note.style.top = deletedNote.top;
+            note.style.width = deletedNote.width;
+            note.style.height = deletedNote.height;
+            note.style.zIndex = deletedNote.zIndex || maxZIndex;
+            note.innerHTML = `
+                <div class="header">
+                    <button class="add-note">+</button>
+                    <button class="delete" data-id="${deletedNote.id.split('_')[1]}">✖</button>
+                </div>
+                <div class="content" contenteditable="true">${deletedNote.content}</div>
+            `;
+            container.appendChild(note);
+            note.addEventListener("mousedown", startDrag);
+            note.addEventListener("touchstart", startDrag, { passive: false });
+            const content = note.querySelector(".content");
+            content.addEventListener("input", saveNotesToLocalStorage);
+            content.addEventListener("focus", () => bringToFront(note));
+
+            const resizeHandle = document.createElement("div");
+            resizeHandle.className = "resize-handle";
+            note.appendChild(resizeHandle);
+            resizeHandle.addEventListener("mousedown", startResize);
+
+            note.querySelector(".add-note").addEventListener("click", function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                content.blur();
+                createStickyNote();
+            });
+
+            note.querySelector(".delete").addEventListener("click", function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                content.blur();
+                deleteStickyNote(this.getAttribute("data-id"));
+            });
+
+            saveNotesToLocalStorage();
+        }
+
+        function openResetConfirmation() {
+            if (confirm("Are you sure you want to reset all notes?")) {
+                resetNotes();
+            }
+        }
+
+        function resetNotes() {
+            const container = document.getElementById("container");
+            container.innerHTML = "";
+            noteId = 0;
+            deletedNotes = [];
+            maxZIndex = 1;
+            localStorage.removeItem("stickyNotes");
+            localStorage.removeItem("deletedNotes");
+            createStickyNote();
+        }
+
+        function saveNotesToLocalStorage() {
+            const notes = document.getElementsByClassName("note");
+            const notesArray = Array.from(notes).map(note => ({
+                id: note.id,
+                content: note.querySelector(".content").innerHTML,
+                leftPercent: note.dataset.leftPercent || ((parseFloat(note.style.left) / window.innerWidth) * 100) || 50,
+                topPercent: note.dataset.topPercent || ((parseFloat(note.style.top) / window.innerHeight) * 100) || 50,
+                height: note.style.height,
+                width: note.style.width,
+                zIndex: note.style.zIndex
+            }));
+            localStorage.setItem("stickyNotes", JSON.stringify(notesArray));
+            localStorage.setItem("deletedNotes", JSON.stringify(deletedNotes));
+        }
+
+        function loadNotesFromLocalStorage() {
+            const savedNotes = localStorage.getItem("stickyNotes");
+            const savedDeletedNotes = localStorage.getItem("deletedNotes");
+            if (savedDeletedNotes) {
+                deletedNotes = JSON.parse(savedDeletedNotes);
+            }
+            if (savedNotes) {
+                const notesArray = JSON.parse(savedNotes);
+                noteId = Math.max(...notesArray.map(n => parseInt(n.id.split('_')[1]))) + 1 || 0;
+                maxZIndex = Math.max(...notesArray.map(n => parseInt(n.zIndex || 1)), 1);
+                const container = document.getElementById("container");
+                container.innerHTML = "";
+                notesArray.forEach(note => {
+                    const newNote = document.createElement("div");
+                    newNote.className = "note";
+                    newNote.id = note.id;
+                    newNote.style.width = note.width || "250px";
+                    newNote.style.height = note.height || "300px";
+                    newNote.style.left = `${note.leftPercent}%`;
+                    newNote.style.top = `${note.topPercent}%`;
+                    newNote.dataset.leftPercent = note.leftPercent;
+                    newNote.dataset.topPercent = note.topPercent;
+                    newNote.style.zIndex = note.zIndex || 1;
+                    newNote.innerHTML = `
+                        <div class="header">
+                            <button class="add-note">+</button>
+                            <button class="delete" data-id="${note.id.split('_')[1]}">✖</button>
+                        </div>
+                        <div class="content" contenteditable="true">${note.content}</div>
+                    `;
+                    container.appendChild(newNote);
+
+                    const content = newNote.querySelector(".content");
+                    content.addEventListener("input", saveNotesToLocalStorage);
+                    content.addEventListener("focus", () => bringToFront(newNote));
+                    newNote.addEventListener("mousedown", startDrag);
+                    newNote.addEventListener("touchstart", startDrag, { passive: false });
+
+                    const resizeHandle = document.createElement("div");
+                    resizeHandle.className = "resize-handle";
+                    newNote.appendChild(resizeHandle);
+                    resizeHandle.addEventListener("mousedown", startResize);
+
+                    newNote.querySelector(".add-note").addEventListener("click", function(event) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        content.blur();
+                        createStickyNote();
+                    });
+                    newNote.querySelector(".delete").addEventListener("click", function(event) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        content.blur();
+                        deleteStickyNote(this.getAttribute("data-id"));
+                    });
+                });
+            } else {
+                createStickyNote();
+            }
+        }
+
+        function saveNotes() {
+            const notes = document.getElementsByClassName("note");
+            const notesArray = Array.from(notes).map(note => ({
+                id: note.id,
+                content: note.querySelector(".content").innerHTML,
+                leftPercent: note.dataset.leftPercent || ((parseFloat(note.style.left) / window.innerWidth) * 100) || 50,
+                topPercent: note.dataset.topPercent || ((parseFloat(note.style.top) / window.innerHeight) * 100) || 50,
+                height: note.style.height,
+                width: note.style.width,
+                zIndex: note.style.zIndex
+            }));
+            const data = {
+                notes: notesArray,
+                deletedNotes: deletedNotes,
+                noteId: noteId,
+                maxZIndex: maxZIndex
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "sticky_notes.json";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function loadNotesFromFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    const container = document.getElementById("container");
+                    container.innerHTML = "";
+
+                    noteId = data.noteId || 0;
+                    maxZIndex = data.maxZIndex || 1;
+                    deletedNotes = data.deletedNotes || [];
+
+                    data.notes.forEach(note => {
+                        const newNote = document.createElement("div");
+                        newNote.className = "note";
+                        newNote.id = note.id;
+                        newNote.style.width = note.width || "250px";
+                        newNote.style.height = note.height || "300px";
+                        let leftPercent = Math.max(0, Math.min(note.leftPercent, 100));
+                        let topPercent = Math.max(0, Math.min(note.topPercent, 100));
+                        newNote.style.left = `${leftPercent}%`;
+                        newNote.style.top = `${topPercent}%`;
+                        newNote.dataset.leftPercent = leftPercent;
+                        newNote.dataset.topPercent = topPercent;
+                        newNote.style.zIndex = note.zIndex || 1;
+                        newNote.innerHTML = `
+                            <div class="header">
+                                <button class="add-note">+</button>
+                                <button class="delete" data-id="${note.id.split('_')[1]}">✖</button>
+                            </div>
+                            <div class="content" contenteditable="true">${note.content}</div>
+                        `;
+                        container.appendChild(newNote);
+
+                        const content = newNote.querySelector(".content");
+                        content.addEventListener("input", saveNotesToLocalStorage);
+                        content.addEventListener("focus", () => bringToFront(newNote));
+                        newNote.addEventListener("mousedown", startDrag);
+                        newNote.addEventListener("touchstart", startDrag, { passive: false });
+
+                        const resizeHandle = document.createElement("div");
+                        resizeHandle.className = "resize-handle";
+                        newNote.appendChild(resizeHandle);
+                        resizeHandle.addEventListener("mousedown", startResize);
+
+                        newNote.querySelector(".add-note").addEventListener("click", function(event) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            content.blur();
+                            createStickyNote();
+                        });
+                        newNote.querySelector(".delete").addEventListener("click", function(event) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            content.blur();
+                            deleteStickyNote(this.getAttribute("data-id"));
+                        });
+                    });
+                    saveNotesToLocalStorage();
+                } catch (error) {
+                    alert("Error loading notes: Invalid file format.");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        document.getElementById("addBtn").addEventListener("click", function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const focusedContent = document.querySelector(".note .content:focus");
+            if (focusedContent) focusedContent.blur();
+            createStickyNote();
+        });
+
+        document.getElementById("undoBtn").addEventListener("click", function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const focusedContent = document.querySelector(".note .content:focus");
+            if (focusedContent) focusedContent.blur();
+            undoDelete();
+        });
+
+        document.getElementById("darkModeToggle").addEventListener("click", function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const focusedContent = document.querySelector(".note .content:focus");
+            if (focusedContent) focusedContent.blur();
+            toggleDarkMode();
+        });
+
+        document.getElementById("saveBtn").addEventListener("click", function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const focusedContent = document.querySelector(".note .content:focus");
+            if (focusedContent) focusedContent.blur();
+            saveNotes();
+        });
+
+        document.getElementById("loadBtn").addEventListener("click", function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const focusedContent = document.querySelector(".note .content:focus");
+            if (focusedContent) focusedContent.blur();
+            document.getElementById("loadFile").click();
+        });
+
+        // 기존 코드에서 추가되는 부분만 강조
+document.getElementById("fullscreenBtn").addEventListener("click", toggleFullscreen);
+document.getElementById("fullscreenBtn").addEventListener("touchstart", function(event) {
+    event.preventDefault(); // 모바일에서 기본 터치 이벤트 방지
+    toggleFullscreen();
+});
+
+function toggleFullscreen() {
+    const fullscreenBtn = document.getElementById("fullscreenBtn");
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().then(() => {
+            fullscreenBtn.textContent = "✖"; // 전체화면일 때 아이콘 변경
+        }).catch(err => {
+            console.error("전체화면 전환 실패:", err);
+        });
+    } else {
+        document.exitFullscreen().then(() => {
+            fullscreenBtn.textContent = "⛶"; // 기본 아이콘으로 복귀
+        }).catch(err => {
+            console.error("전체화면 종료 실패:", err);
+        });
+    }
+}
+
+// 전체화면 상태 변경 감지 (아이콘 동기화)
+document.addEventListener("fullscreenchange", function() {
+    const fullscreenBtn = document.getElementById("fullscreenBtn");
+    if (!document.fullscreenElement) {
+        fullscreenBtn.textContent = "⛶";
+    } else {
+        fullscreenBtn.textContent = "✖";
+    }
+});
+
+
+        window.onload = function() {
+            loadDarkModeState();
+            loadNotesFromLocalStorage();
+        };
+    </script>
+</body>
+</html>
