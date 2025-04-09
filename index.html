@@ -346,11 +346,6 @@
     currentNote = event.target.closest(".note");
     bringToFront(currentNote);
 
-    // 퍼센트 단위로 초기 위치 저장
-    const containerWidth = window.innerWidth;
-    const containerHeight = window.innerHeight;
-    initialLeft = (parseFloat(currentNote.style.left) / 100) * containerWidth || 0;
-    initialTop = (parseFloat(currentNote.style.top) / 100) * containerHeight || 0;
     initialWidth = parseFloat(currentNote.style.width) || currentNote.offsetWidth;
     initialHeight = parseFloat(currentNote.style.height) || currentNote.offsetHeight;
     initialMouseX = event.clientX;
@@ -369,20 +364,12 @@ function resizeNote(event) {
     const newWidth = Math.max(initialWidth + deltaX, 100);
     const newHeight = Math.max(initialHeight + deltaY, 50);
 
-    // 크기만 업데이트하고 위치는 변경하지 않음
     currentNote.style.width = `${newWidth}px`;
     currentNote.style.height = `${newHeight}px`;
-    // 위치는 퍼센트 단위로 유지되므로 여기서 수정하지 않음
 }
 
 function stopResize() {
     isResizing = false;
-    if (currentNote) {
-        const containerWidth = window.innerWidth;
-        const containerHeight = window.innerHeight;
-        currentNote.dataset.leftPercent = (parseFloat(currentNote.style.left) / 100) * containerWidth || 0;
-        currentNote.dataset.topPercent = (parseFloat(currentNote.style.top) / 100) * containerHeight || 0;
-    }
     currentNote = null;
     document.removeEventListener("mousemove", resizeNote);
     document.removeEventListener("mouseup", stopResize);
@@ -449,28 +436,28 @@ function stopResize() {
         }
 
         function deleteStickyNote(noteId) {
-            const note = document.getElementById("note_" + noteId);
-            const container = document.getElementById("container");
-            const notes = container.getElementsByClassName("note");
+    const note = document.getElementById("note_" + noteId);
+    const container = document.getElementById("container");
+    const notes = container.getElementsByClassName("note");
 
-            if (notes.length === 1) {
-                openResetConfirmation();
-            } else {
-                if (note) {
-                    deletedNotes.push({
-                        id: note.id,
-                        content: note.querySelector(".content").innerHTML,
-                        top: note.style.top,
-                        left: note.style.left,
-                        height: note.style.height,
-                        width: note.style.width,
-                        zIndex: note.style厨
-                    });
-                    note.remove();
-                    saveNotesToLocalStorage();
-                }
-            }
+    if (notes.length === 1) {
+        openResetConfirmation();
+    } else {
+        if (note) {
+            deletedNotes.push({
+                id: note.id,
+                content: note.querySelector(".content").innerHTML,
+                top: note.style.top,
+                left: note.style.left,
+                height: note.style.height,
+                width: note.style.width,
+                zIndex: note.style.zIndex
+            });
+            note.remove();
+            saveNotesToLocalStorage();
         }
+    }
+}
 
         function undoDelete() {
             if (deletedNotes.length === 0) return;
